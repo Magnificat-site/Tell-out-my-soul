@@ -1,52 +1,10 @@
 <html>
 <head>
 <style>
-.pipA{
+.pip{
 	width: 3em;
 	display: inline-block;
-	background-color: red;
 }
-.pipB{
-	width: 3em;
-	display: inline-block;
-	background-color: darkorange;
-}
-.pipC{
-	width: 3em;
-	display: inline-block;
-	background-color: yellow;
-}
-.pipD{
-	width: 3em;
-	display: inline-block;
-	background-color: green;
-}
-.pipE{
-	width: 3em;
-	display: inline-block;
-	background-color: blue;
-}
-.pipF{
-	width: 3em;
-	display: inline-block;
-	background-color: darkmagenta;
-}
-.pipG{
-	width: 3em;
-	display: inline-block;
-	background-color: aqua;
-}
-.pipH{
-	width: 3em;
-	display: inline-block;
-	background-color: darkred;
-}
-.pipI{
-	width: 3em;
-	display: inline-block;
-	background-color: deeppink;
-}
-
 .bottle{
 	border: 2px solid black;
 	height: 3em;
@@ -57,8 +15,111 @@
 }
 </style>
 <script>
+const starting_bottles = 9
+const max_length = 5;
+var click_count = 0;
+var score = 0;
+var bottles_done = 0;
+var bgcolors = ["red","darkorange","yellow","green","blue","darkmagenta","aqua","darkred","deeppink","black","brown","darkgreen","darkkhaki","olive","skyblue","teal","yellowgreen","salmon","lightgray","lightslategray","dimgray"];
+var came_from = "";
+function colorcode(h) {
+    var r, g, b, i, f, q;
+    i = Math.floor(h * 6);
+    f = h * 6 - i;
+    q = (1 - f);
+    switch (i % 6) {
+        case 0: r = 1, g = f, b = 0; break;
+        case 1: r = q, g = 1, b = 0; break;
+        case 2: r = 0, g = 1, b = f; break;
+        case 3: r = 0, g = q, b = 1; break;
+        case 4: r = f, g = 0, b = 1; break;
+        case 5: r = 1, g = 0, b = q; break;
+    }
+    return (Math.round(r * 255).toString(16))+(Math.round(g * 255).toString(16))+(Math.round(b * 255).toString(16));
+}
+function clickbottle(bottle){
+	var c = bottle.childNodes;
+//	alert (c.length);
+	var holder = document.getElementById("holder");
+	if (holder.childNodes.length > 0 && c.length < max_length){
+//		alert("moving from holder to bottle");
+		if (bottle === came_from) {
+//			alert("undo");
+		} else {
+			click_count++;
+		}
+		document.getElementById("clicks").innerHTML = click_count;
+		while (c.length < max_length && holder.childNodes.length > 0){
+			var lc = holder.lastChild;
+			lc.remove();
+			bottle.appendChild(lc);
+		}
+		if (bottle.childNodes.length == max_length){
+			//check if done
+			var done = true;
+			for (var i = 1; i < max_length; i++){
+				if (!(bottle.childNodes[i].innerHTML == bottle.childNodes[i-1].innerHTML)){
+					done = false;
+				}
+			}
+			if(done){
+				bottles_done++;
+				var bottle_score = Math.ceil(bottles_done*10000/click_count);
+				var span = document.createElement("span");
+				var node = document.createTextNode(bottle_score);
+				span.appendChild(node);
+				bottle.appendChild(span);
+				score += bottle_score;
+				document.getElementById("score").innerHTML = score;
+				if (bottles_done == starting_bottles){
+					document.getElementById("restart").innerHTML = "You win!!! Play again?";
+				}
+				//append score
+				//check if all done
+			}
+		}
+	} else if (holder.childNodes.length == 0 && c.length > 0 && c.length <= max_length){
+//		alert("moving from bottle to holder");
+		came_from = bottle;
+		var lc = bottle.lastChild;
+		lc.remove();
+		holder.appendChild(lc);
+		while (holder.childNodes.length > 0 && bottle.childNodes.length > 0 && bottle.lastChild.innerHTML == lc.innerHTML){
+			lc = bottle.lastChild;
+			lc.remove();
+			holder.appendChild(lc);
+		}
+	} else {
+//		alert("holder elements :"+holder.childNodes.length+"; bottle elements: "+c.length);
+	}
+}
 function shuffle(){
-	var ul = document.getElementById("holder");
+	click_count = 0;
+	score = 0;
+	bottles_done = 0;
+	var holder = document.getElementById("holder");
+	document.getElementById('gamespace').innerHTML = '';
+	holder.innerHTML = '';
+	document.getElementById("clicks").innerHTML = click_count;
+	document.getElementById("score").innerHTML = score;
+	document.getElementById("restart").innerHTML = "Restart";
+	document.getElementById('gamespace').innerHTML = '';
+	for (var bottle_num = 0; bottle_num <= starting_bottles; bottle_num++){
+		var this_bottle = document.createElement("div");
+		this_bottle.setAttribute("onclick","clickbottle(this)");
+		this_bottle.classList.add("bottle");
+//		this_bottle.style.backgroundColor = colorcode(bottle_num/(1+starting_bottles));
+		document.getElementById('gamespace').appendChild(this_bottle);
+	}
+	for (var element_type = 0; element_type < starting_bottles; element_type++){
+		for (element_num = 0; element_num < max_length; element_num++){
+			var pip = document.createElement("span");
+			pip.classList.add("pip");
+			pip.style.backgroundColor = bgcolors[element_type];
+			pip.innerHTML = String.fromCharCode(65+element_type);
+			holder.appendChild(pip);
+		}
+	}
 	var x = document.getElementsByClassName("bottle");
 	var i;
 	for (i = 0; i < x.length; i++) {
@@ -68,11 +129,11 @@ function shuffle(){
 			holder.appendChild(lc);
 		}
 	}
-	for (var i = ul.children.length; i >= 0; i--) {
-		ul.appendChild(ul.children[Math.random() * i | 0]);
+	for (var i = holder.children.length; i >= 0; i--) {
+		holder.appendChild(holder.children[Math.random() * i | 0]);
 	}
 	for (i = 0; i < x.length-1; i++) {
-		for (var j = 0; j < 4; j++) {
+		for (var j = 0; j < max_length; j++) {
 			if (holder.childNodes.length > 0 ){
 				var lc = holder.lastChild;
 				lc.remove();
@@ -82,46 +143,13 @@ function shuffle(){
 	}
 
 }
-function clickbottle(bottle){
-	var c = bottle.childNodes;
-//	alert (c.length);
-	var holder = document.getElementById("holder");
-	if (holder.childNodes.length > 0 && c.length < 4){
-//		alert("moving from holder to bottle");
-		while (c.length < 4 && holder.childNodes.length > 0){
-			var lc = holder.lastChild;
-			lc.remove();
-			bottle.appendChild(lc);
-		}
-	} else if (holder.childNodes.length == 0 && c.length > 0){
-//		alert("moving from bottle to holder");
-		var lc = bottle.lastChild;
-		lc.remove();
-		holder.appendChild(lc);
-		while (holder.childNodes.length > 0 && bottle.lastChild.innerHTML == lc.innerHTML){
-			lc = bottle.lastChild;
-			lc.remove();
-			holder.appendChild(lc);
-		}
-	} else {
-//		alert("holder elements :"+holder.childNodes.length+"; bottle elements: "+c.length);
-	}
-}
+
 </script>
 </head>
 <body onload="shuffle();">
-
-<div class="bottle" onclick="clickbottle(this)"><span class="pipF">F</span><span class="pipA">A</span><span class="pipB">B</span><span class="pipG">G</span></div>
-<div class="bottle" onclick="clickbottle(this)"><span class="pipI">I</span><span class="pipD">D</span><span class="pipH">H</span><span class="pipD">D</span></div>
-<div class="bottle" onclick="clickbottle(this)"><span class="pipG">G</span><span class="pipD">D</span><span class="pipF">F</span><span class="pipI">I</span></div>
-<div class="bottle" onclick="clickbottle(this)"><span class="pipH">H</span><span class="pipE">E</span><span class="pipF">F</span><span class="pipA">A</span></div>
-<div class="bottle" onclick="clickbottle(this)"><span class="pipC">C</span><span class="pipC">C</span><span class="pipE">E</span><span class="pipA">A</span></div>
-<div class="bottle" onclick="clickbottle(this)"><span class="pipD">D</span><span class="pipI">I</span><span class="pipC">C</span><span class="pipH">H</span></div>
-<div class="bottle" onclick="clickbottle(this)"><span class="pipG">G</span><span class="pipB">B</span><span class="pipG">G</span><span class="pipB">B</span></div>
-<div class="bottle" onclick="clickbottle(this)"><span class="pipE">E</span><span class="pipF">F</span><span class="pipH">H</span><span class="pipI">I</span></div>
-<div class="bottle" onclick="clickbottle(this)"><span class="pipE">E</span><span class="pipC">C</span><span class="pipB">B</span><span class="pipA">A</span></div>
-<div class="bottle" onclick="clickbottle(this)"></div>
-<p onclick="shuffle();">Restart</p>
+<div id="gamespace">
+</div>
+<p><span id="restart" onclick="shuffle();">Restart</span> Clicks: <span id="clicks">0</span> Score: <span id="score">0</span></p>
 <div id="holder"></div>
 </body>
 </html>
